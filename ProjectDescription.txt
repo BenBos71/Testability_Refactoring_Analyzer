@@ -1,0 +1,327 @@
+Perfect. Below is copy-paste–ready plain text, written the way you’d actually keep it in a design doc or notes file.
+No fluff, no marketing language—this is an engineering description.
+
+⸻
+
+Project: Testability Refactoring Analyzer
+
+Overview
+
+The Testability Refactoring Analyzer is a static analysis tool that evaluates how testable a codebase is and explains why certain code is difficult to unit test. Rather than generating tests, the tool identifies structural inhibitors to testability and produces actionable, rules-based refactoring suggestions.
+
+The goal is to help engineers improve unit test quality, reduce test brittleness, and refactor code toward more deterministic, isolated, and observable designs—without relying on AI or runtime instrumentation.
+
+The tool is intentionally heuristic-driven and conservative. It does not attempt to infer business intent or correctness. Instead, it focuses on structural properties that are well-known to impact testability in safety-critical, embedded, and systems-oriented software.
+
+⸻
+
+Goals
+	•	Quantify testability using explainable, deterministic metrics
+	•	Identify specific testability inhibitors at the function and class level
+	•	Provide concrete, actionable refactoring guidance
+	•	Require no AI, learning models, or runtime execution
+	•	Be extensible to C++ static analysis in future versions
+
+⸻
+
+Non-Goals (v1)
+	•	Automatically generating unit tests
+	•	Inferring business logic correctness
+	•	Detecting performance issues
+	•	Runtime profiling or dynamic tracing
+	•	Perfect accuracy (heuristics are expected and documented)
+
+⸻
+
+Inputs
+	•	One or more Python source files
+	•	Optional configuration file (future)
+	•	No test files or coverage data required in v1
+
+⸻
+
+Outputs
+	•	Human-readable text report
+	•	Machine-readable JSON report
+
+Each report includes:
+	•	Overall testability score (0–100)
+	•	Per-function and per-class findings
+	•	Ranked list of testability inhibitors
+	•	Refactoring suggestions mapped to detected issues
+
+⸻
+
+Scoring Philosophy
+
+The testability score is a heuristic indicator, not an absolute truth.
+	•	Start at 100 points
+	•	Subtract points for each detected inhibitor
+	•	The score is explainable and reproducible
+	•	Scores are comparable across revisions of the same codebase
+
+⸻
+
+Intended Audience
+	•	Engineers working on legacy or safety-critical code
+	•	Developers refactoring for improved test coverage
+	•	Teams enforcing testability standards in CI
+	•	Engineers interested in static analysis and tooling
+
+⸻
+
+Future Direction
+
+Later versions may:
+	•	Integrate coverage data
+	•	Support C++ via Clang LibTooling
+	•	Provide refactor impact comparisons
+	•	Offer CI gating based on testability regression
+
+⸻
+
+v1 Testability Rules (Exact)
+
+The following rules define version 1 of the analyzer.
+No additional rules will be added until v2.
+
+⸻
+
+Rule 1: External Dependency Count
+
+Detection
+	•	Count distinct external interactions inside a function:
+	•	File system access
+	•	Environment variables
+	•	Network calls
+	•	OS-level calls
+	•	Module-level singletons
+
+Penalty
+	•	−5 points per distinct dependency type
+
+Rationale
+More dependencies require more mocking and setup, reducing unit test clarity.
+
+Suggestion
+
+Introduce dependency injection or extract logic into a pure function.
+
+⸻
+
+Rule 2: Direct File I/O in Logic
+
+Detection
+	•	Calls to open, file reads/writes, or filesystem APIs inside non-I/O-specific functions
+
+Penalty
+	•	−10 points per function
+
+Rationale
+File I/O tightly couples logic to environment state.
+
+Suggestion
+
+Separate I/O from business logic and inject file interfaces.
+
+⸻
+
+Rule 3: Non-Deterministic Time Usage
+
+Detection
+	•	Calls to:
+	•	time.time
+	•	datetime.now
+	•	datetime.utcnow
+
+Penalty
+	•	−10 points per function
+
+Rationale
+Time-dependent logic makes tests brittle and non-repeatable.
+
+Suggestion
+
+Inject a clock dependency.
+
+⸻
+
+Rule 4: Randomness Usage
+
+Detection
+	•	Calls to:
+	•	random.*
+	•	uuid.uuid*
+
+Penalty
+	•	−10 points per function
+
+Rationale
+Randomness prevents deterministic assertions.
+
+Suggestion
+
+Inject a random number generator or seedable interface.
+
+⸻
+
+Rule 5: Global State Mutation
+
+Detection
+	•	Assignments to:
+	•	Module-level variables
+	•	Global objects
+	•	Singletons
+
+Penalty
+	•	−10 points per function
+
+Rationale
+Global state causes test order dependence and hidden coupling.
+
+Suggestion
+
+Pass state explicitly or encapsulate it in an instance.
+
+⸻
+
+Rule 6: Mixed I/O and Logic
+
+Detection
+	•	A function that:
+	•	Performs I/O
+	•	AND returns computed values
+
+Penalty
+	•	−8 points per function
+
+Rationale
+Mixing effects and logic prevents isolated testing.
+
+Suggestion
+
+Extract pure computation into a separate function.
+
+⸻
+
+Rule 7: Branch Explosion Risk
+
+Detection
+	•	Count conditional branches:
+	•	if / elif
+	•	match
+	•	Ternary expressions
+
+Penalty
+	•	−2 points per branch after 3 branches
+
+Rationale
+High branching increases required test cases exponentially.
+
+Suggestion
+
+Simplify control flow or extract decision logic.
+
+⸻
+
+Rule 8: Exception-Driven Control Flow
+
+Detection
+	•	Exceptions raised as part of normal logic paths
+
+Penalty
+	•	−5 points per function
+
+Rationale
+Exception paths are often under-tested and obscure intent.
+
+Suggestion
+
+Replace with explicit return values where appropriate.
+
+⸻
+
+Rule 9: Constructor Side Effects (Classes)
+
+Detection
+	•	__init__ methods that perform:
+	•	I/O
+	•	Time access
+	•	Global mutations
+	•	Network calls
+
+Penalty
+	•	−15 points per class
+
+Rationale
+Side effects during construction complicate object setup in tests.
+
+Suggestion
+
+Defer work to explicit initialization methods.
+
+⸻
+
+Rule 10: Hidden Dependencies via Imports-in-Function
+
+Detection
+	•	Imports used inside functions instead of module scope
+
+Penalty
+	•	−5 points per function
+
+Rationale
+Hidden dependencies are harder to mock and reason about.
+
+Suggestion
+
+Move dependencies to parameters or module-level injection points.
+
+⸻
+
+Rule 11: Excessive Parameter Count
+
+Detection
+	•	Functions with more than 5 parameters
+
+Penalty
+	•	−5 points per function
+
+Rationale
+High arity often signals missing abstractions and test setup complexity.
+
+Suggestion
+
+Introduce parameter objects or refactor responsibilities.
+
+⸻
+
+Rule 12: Low Observability
+
+Detection
+	•	Functions that:
+	•	Perform work
+	•	Have no return value
+	•	And do not emit structured outputs
+
+Penalty
+	•	−5 points per function
+
+Rationale
+Untestable outcomes reduce assertion quality.
+
+Suggestion
+
+Return meaningful results or expose observable state.
+
+⸻
+
+End of v1 Ruleset
+
+⸻
+
+If you want, next I’d strongly recommend:
+	•	Designing the CLI interface
+	•	Or writing a small “example bad file” and showing expected analyzer output
+
+Both help lock the design before you write too much code.
