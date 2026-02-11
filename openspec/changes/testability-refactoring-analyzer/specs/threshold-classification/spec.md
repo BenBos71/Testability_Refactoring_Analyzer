@@ -34,6 +34,16 @@ The system SHALL identify and prominently display structural testability smells 
 - **AND** system flags networking combined with business logic as red flags
 - **AND** system flags exception-driven control flow in hot paths as red flags
 
+### Requirement: Provide optional refactoring suggestions
+The system SHALL provide optional refactoring suggestions for non-red-flag violations that may improve code quality but are not critical for testability.
+
+#### Scenario: Optional suggestion generation
+- **WHEN** detecting violations that are not red flags
+- **THEN** system provides optional refactoring suggestions
+- **AND** system clearly marks these as optional improvements
+- **AND** system explains the potential benefits of each suggestion
+- **AND** system does not penalize developers for ignoring these suggestions
+
 ### Requirement: Apply function-level thresholds
 The system SHALL apply function-specific score thresholds: Easy to test (75+), Testable with effort (55-74), Hard to test (35-54), Painful (below 35).
 

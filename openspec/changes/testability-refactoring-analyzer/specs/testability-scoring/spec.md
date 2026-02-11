@@ -18,11 +18,13 @@ The system SHALL calculate testability scores at function, class, and file level
 - **AND** system incorporates class constructor penalties
 - **AND** system applies appropriate weighting for file-level assessment
 
-### Requirement: Provide score breakdown explanations
-The system SHALL provide detailed breakdowns showing exactly which rules contributed to score deductions and the point values subtracted for each violation.
+### Requirement: Provide comprehensive score breakdown explanations
+The system SHALL provide detailed breakdowns showing every single detected testability inhibitor with its exact location, rule description, and the point values subtracted for each violation.
 
 #### Scenario: Score explanation generation
 - **WHEN** generating score breakdown
-- **THEN** system lists each detected inhibitor with its penalty
+- **THEN** system lists every detected inhibitor with its penalty
+- **AND** system shows the exact file location (line number) for each violation
 - **AND** system shows the calculation from baseline to final score
-- **AND** system prioritizes higher-impact inhibitors in the explanation
+- **AND** system includes the rule description for each violation
+- **AND** system ensures no violations are omitted from the explanation
