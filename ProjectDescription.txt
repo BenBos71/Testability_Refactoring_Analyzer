@@ -1,17 +1,17 @@
-Perfect. Below is copy-paste–ready plain text, written the way you’d actually keep it in a design doc or notes file.
-No fluff, no marketing language—this is an engineering description.
-
-⸻
-
 Project: Testability Refactoring Analyzer
 
 Overview
 
-The Testability Refactoring Analyzer is a static analysis tool that evaluates how testable a codebase is and explains why certain code is difficult to unit test. Rather than generating tests, the tool identifies structural inhibitors to testability and produces actionable, rules-based refactoring suggestions.
+The Testability Refactoring Analyzer is a static analysis tool that evaluates how testable a codebase is and explains
+why certain code is difficult to unit test. Rather than generating tests, the tool identifies structural inhibitors to
+testability and produces actionable, rules-based refactoring suggestions.
 
-The goal is to help engineers improve unit test quality, reduce test brittleness, and refactor code toward more deterministic, isolated, and observable designs—without relying on AI or runtime instrumentation.
+The goal is to help engineers improve unit test quality, reduce test brittleness, and refactor code toward more 
+deterministic, isolated, and observable designs—without relying on AI or runtime instrumentation.
 
-The tool is intentionally heuristic-driven and conservative. It does not attempt to infer business intent or correctness. Instead, it focuses on structural properties that are well-known to impact testability in safety-critical, embedded, and systems-oriented software.
+The tool is intentionally heuristic-driven and conservative. It does not attempt to infer business intent or 
+correctness. Instead, it focuses on structural properties that are well-known to impact testability in safety-critical,
+embedded, and systems-oriented software.
 
 ⸻
 
@@ -318,10 +318,191 @@ Return meaningful results or expose observable state.
 
 End of v1 Ruleset
 
+
+
+
+
+80–100 — Healthy
+	•	Tests should be straightforward
+	•	Refactors are low-risk
+	•	No action needed
+
+60–79 — Caution
+	•	Tests are possible but increasingly brittle
+	•	Refactoring before adding features is recommended
+
+40–59 — High Friction
+	•	Writing new tests is expensive
+	•	Refactors likely require test rewrites
+	•	Strong candidate for structural refactor
+
+Below 40 — Refactor First
+	•	Tests are fragile or avoided
+	•	Changes are risky
+	•	Structural refactor is justified before feature work
+
+
+
+
+This is important:
+
+Refactor decisions are file-level.
+Causes are function-level.
+
+Rule of thumb
+	•	One bad function ≠ refactor file
+	•	Many medium-bad functions = refactor file
+
+So:
+	•	File score = weighted aggregate of function scores
+	•	Highlight top offenders inside the file
+
+Example output:
+
+File testability score: 52 (High Friction)
+
+Top contributors:
+- process_order(): 34
+- load_config(): 41
+- OrderManager.__init__(): constructor side effects
+
+Concrete numeric thresholds (recommended)
+
+Here are thresholds that are:
+	•	Defensible
+	•	Not arbitrary-feeling
+	•	Conservative
+
+Function-level
+Score
+Meaning
+Action
+≥75
+Easy to test
+No action
+55–74
+Testable with effort
+Consider refactor
+35–54
+Hard to test
+Refactor recommended
+<35
+Painful
+Refactor strongly recommended
+
+
+File-level
+Score
+Meaning
+Action
+≥80
+Healthy
+No action
+60–79
+Caution
+Refactor opportunistically
+40–59
+High friction
+Refactor before feature work
+<40
+Refactor first
+Structural changes justified
+
+
+
+Thresholds for specific red flags
+
+Some things should trip warnings regardless of total score.
+
+These are structural smells, not metrics.
+
+Always-Flag Conditions
+
+These should appear prominently even if score is “okay”:
+	•	Constructor (__init__) performs I/O
+	•	Global state mutation
+	•	Non-determinism in core logic
+	•	File does networking + business logic
+	•	Exception-driven control flow in hot paths
+
+These are:
+
+“This will bite you later” signals
+
+Think of them as yellow tape, not a stop sign.
+
+
+“Refactor trigger” heuristics (very realistic)
+
+In real teams, refactors usually happen when:
+	•	You’re about to add tests
+	•	You’re about to add features
+	•	You just got burned by a bug
+
+So your tool can phrase guidance like:
+This file is in the "High Friction" band.
+
+Recommendation:
+- Refactor before adding new behavior
+- Extract pure functions to improve isolation
+- Introduce dependency injection for time and filesystem access
+
+
+Don’t over-weight complexity early
+
+This is a common mistake.
+
+A function with:
+	•	6 branches
+	•	but pure
+	•	deterministic
+	•	no dependencies
+
+…is still testable.
+
+So:
+	•	Complexity penalties should be lighter than:
+	•	I/O
+	•	Globals
+	•	Time
+	•	Randomness
+
+
+How to justify these thresholds (important)
+
+If anyone ever questions them, your answer is simple and strong:
+
+“These thresholds reflect increasing marginal cost of writing reliable unit tests, not code quality.”
+
+That’s a defensible engineering stance.
+
 ⸻
 
-If you want, next I’d strongly recommend:
-	•	Designing the CLI interface
-	•	Or writing a small “example bad file” and showing expected analyzer output
+8. Recommended v1 behavior (summary)
 
-Both help lock the design before you write too much code.
+For v1, I’d hardcode:
+	•	The band thresholds above
+	•	A small set of always-flag conditions
+	•	Conservative language in output
+
+Avoid:
+	•	Auto-failing builds
+	•	Hard refactor mandates
+	•	Absolute claims
+
+⸻
+
+9. If you want one concrete next step
+
+I’d recommend this next:
+
+👉 Create 3 example files
+	1.	Healthy file
+	2.	High-friction file
+	3.	Refactor-first file
+
+Then write the expected analyzer output before writing more code.
+
+That will lock your thresholds and tone.
+
+If you want, I can help you draft those example files and the expected reports next.
