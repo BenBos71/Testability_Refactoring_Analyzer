@@ -1,0 +1,384 @@
+# Testability Refactoring Analyzer
+
+[![PyPI version](https://badge.fury.io/py/testability-analyzer.svg)](https://badge.fury.io/py/testability-analyzer)
+[![Python versions](https://img.shields.io/pypi/pyversions/testability-analyzer.svg)](https://pypi.org/project/testability-analyzer/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A static analysis tool that evaluates Python code testability using deterministic, heuristic-based rules and provides actionable refactoring guidance.
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+pip install testability-analyzer
+```
+
+### Basic Usage
+
+```bash
+# Analyze a single file
+testability-analyzer myfile.py
+
+# Analyze a directory
+testability-analyzer src/
+
+# Get JSON output for CI/CD
+testability-analyzer src/ --output json
+
+# Get detailed verbose output
+testability-analyzer src/ --verbose
+```
+
+## 📊 What It Does
+
+The Testability Analyzer evaluates your Python code against 12 testability rules and provides:
+
+- **Testability Scores** (0-100) for functions, classes, and files
+- **Classification** into bands (Healthy, Caution, High Friction, Refactor First)
+- **Red Flag Detection** for critical structural issues
+- **Detailed Violation Reports** with exact locations and point deductions
+- **Actionable Refactoring Suggestions** for each issue
+
+## 🎯 Example Output
+
+### Text Output
+
+```
+Testability Analysis Report
+==================================================
+Summary:
+Files analyzed: 3
+Functions analyzed: 15
+Classes analyzed: 4
+Average score: 72.3
+
+📁 src/main.py
+Score: 85 | Classification: Healthy
+
+📁 src/utils.py
+Score: 65 | Classification: Caution
+
+🚨 RED FLAGS:
+  • Non-Deterministic Time Usage (line 15) - Non-deterministic time usage makes testing difficult [-10 points]
+  • Constructor Side Effects (line 21) - Constructor has side effects [-15 points]
+
+Functions:
+  process_data(): 85
+  calculate_total(): 75
+    • External Dependency Count (line 8) - External dependency: File System [-5 points]
+    • Direct File I/O in Logic (line 12) - Direct file I/O in business logic [-10 points]
+```
+
+### JSON Output
+
+```json
+{
+  "metadata": {
+    "tool": "Testability Analyzer",
+    "version": "0.1.0",
+    "timestamp": "2025-02-12T14:30:00.000000"
+  },
+  "summary": {
+    "total_files": 3,
+    "total_functions": 15,
+    "total_classes": 4,
+    "total_violations": 23,
+    "total_red_flags": 5,
+    "score_statistics": {
+      "average": 72.3,
+      "minimum": 45.0,
+      "maximum": 95.0
+    },
+    "classifications": {
+      "Healthy": 1,
+      "Caution": 1,
+      "High Friction": 1,
+      "Refactor First": 0
+    }
+  },
+  "files": [...]
+}
+```
+
+## 🔍 Testability Rules
+
+### Red Flag Rules (Always Critical)
+
+| Rule | Penalty | Description |
+|------|---------|-------------|
+| Constructor Side Effects | -15 | I/O, network calls, or other side effects in constructors |
+| Global State Mutation | -10 | Functions that modify global variables |
+| Non-Deterministic Time Usage | -10 | Using `time.time()`, `datetime.now()`, etc. |
+| Mixed I/O and Logic | -8 | Functions mixing business logic with I/O operations |
+| Exception-Driven Control Flow | -5 | Using exceptions for normal program flow |
+
+### Standard Rules
+
+| Rule | Penalty | Description |
+|------|---------|-------------|
+| Direct File I/O in Logic | -10 | File operations embedded in business logic |
+| Randomness Usage | -10 | Using random number generators |
+| External Dependency Count | -5 per type | Dependencies on external systems |
+| Hidden Dependencies | -5 | Import statements inside functions |
+| Excessive Parameter Count | -5 | Functions with more than 5 parameters |
+| Low Observability | -5 | Functions without return values or logging |
+| Branch Explosion Risk | -2 per branch after 3 | Excessive conditional branching |
+
+## 📈 Scoring System
+
+### Score Bands
+
+- **Healthy (80-100)**: Well-structured, easily testable code
+- **Caution (60-79)**: Some testability issues, moderate effort to improve
+- **High Friction (40-59)**: Significant testability problems, major refactoring needed
+- **Refactor First (<40)**: Critical testability issues, refactor before adding features
+
+### Score Calculation
+
+- All functions start with a baseline score of 100 points
+- Points are deducted for each rule violation
+- File scores use the worst function score (conservative approach)
+- Scores never go below 0
+
+## 🛠️ Integration with CI/CD
+
+### GitHub Actions
+
+```yaml
+name: Testability Analysis
+on: [push, pull_request]
+
+jobs:
+  testability:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+    - run: pip install testability-analyzer
+    - run: testability-analyzer src/ --output json > results.json
+    - uses: actions/upload-artifact@v3
+      with:
+        name: testability-results
+        path: results.json
+```
+
+### Quality Gate
+
+```bash
+#!/bin/bash
+avg_score=$(testability-analyzer src/ --output json | jq -r '.summary.score_statistics.average')
+min_score=70
+
+if (( $(echo "$avg_score < $min_score" | bc -l) )); then
+  echo "❌ Testability score ($avg_score) is below threshold ($min_score)"
+  exit 1
+fi
+```
+
+## 📚 Documentation
+
+- [User Guide](docs/user_guide.md) - Comprehensive installation and usage instructions
+- [Rules Documentation](docs/rules.md) - Detailed explanation of all testability rules
+- [CI/CD Examples](docs/ci_cd_examples.md) - Integration examples for various platforms
+
+## 🧪 Example Analysis
+
+### Before Refactoring
+
+```python
+# problematic_code.py
+import time
+import random
+import requests
+
+class DataProcessor:
+    def __init__(self, api_url):
+        self.api_url = api_url
+        self.session = requests.Session()  # 🚨 Constructor side effect
+        self.cache = {}
+    
+    def process_data(self, data, param1, param2, param3, param4, param5, param6):
+        start_time = time.time()  # 🚨 Time dependency
+        random_value = random.random()  # 🚨 Randomness
+        
+        with open('temp.txt', 'w') as f:  # 🚨 File I/O in logic
+            f.write(str(data))
+        
+        try:
+            response = self.session.get(f"{self.api_url}/data")  # 🚨 Mixed I/O and logic
+            return response.json()
+        except:
+            return None  # 🚨 Exception-driven control flow
+```
+
+**Analysis Result:**
+```
+Score: 25 | Classification: Refactor First
+
+🚨 RED FLAGS:
+  • Constructor Side Effects (line 6) [-15 points]
+  • Non-Deterministic Time Usage (line 10) [-10 points]
+  • Randomness Usage (line 11) [-10 points]
+  • Mixed I/O and Logic (line 13) [-8 points]
+  • Exception-Driven Control Flow (line 18) [-5 points]
+  • Excessive Parameter Count (line 9) [-5 points]
+```
+
+### After Refactoring
+
+```python
+# refactored_code.py
+from typing import Optional, Dict, Any
+import requests
+
+class TimeProvider:
+    @staticmethod
+    def now():
+        import time
+        return time.time()
+
+class RandomProvider:
+    @staticmethod
+    def random():
+        import random
+        return random.random()
+
+class FileWriter:
+    @staticmethod
+    def write_temp(data: str):
+        with open('temp.txt', 'w') as f:
+            f.write(data)
+
+class APIClient:
+    def __init__(self, api_url: str):
+        self.api_url = api_url
+    
+    def get_data(self) -> Optional[Dict[str, Any]]:
+        try:
+            response = requests.get(f"{self.api_url}/data")
+            return response.json()
+        except requests.RequestException as e:
+            return None
+
+class DataProcessor:
+    def __init__(self, api_client: APIClient):
+        self.api_client = api_client
+    
+    def process_data(self, data: str, time_provider: TimeProvider, 
+                     random_provider: RandomProvider, file_writer: FileWriter) -> Optional[Dict[str, Any]]:
+        start_time = time_provider.now()
+        random_value = random_provider.random()
+        
+        file_writer.write_temp(str(data))
+        return self.api_client.get_data()
+```
+
+**Analysis Result:**
+```
+Score: 95 | Classification: Healthy
+
+✅ No violations found
+```
+
+## 🎯 When to Use
+
+### Use Cases
+
+- **Code Reviews**: Identify testability issues before merging
+- **Refactoring Planning**: Prioritize which parts of codebase to improve
+- **Quality Gates**: Enforce minimum testability standards in CI/CD
+- **Technical Debt Assessment**: Quantify testability debt across projects
+- **Team Training**: Educate developers on testability principles
+
+### Best Practices
+
+1. **Run on source code only** (exclude test files)
+2. **Focus on red flags first** (they indicate structural issues)
+3. **Use verbose mode** for detailed explanations
+4. **Integrate with CI/CD** for continuous monitoring
+5. **Track score trends** over time
+
+## 🔧 Advanced Usage
+
+### Custom Scripts
+
+```python
+#!/usr/bin/env python3
+import sys
+from testability_analyzer.analyzer import TestabilityAnalyzer
+
+def analyze_and_filter(directory, min_score=70):
+    analyzer = TestabilityAnalyzer()
+    results = analyzer.analyze_directory(directory)
+    
+    low_score_files = [f for f in results if f.overall_score < min_score]
+    
+    if low_score_files:
+        print(f"Files with score < {min_score}:")
+        for file_result in low_score_files:
+            print(f"  {file_result.file_path}: {file_result.overall_score}")
+        return 1
+    else:
+        print(f"All files have score >= {min_score}")
+        return 0
+
+if __name__ == "__main__":
+    directory = sys.argv[1] if len(sys.argv) > 1 else "src/"
+    min_score = int(sys.argv[2]) if len(sys.argv) > 2 else 70
+    sys.exit(analyze_and_filter(directory, min_score))
+```
+
+### Batch Analysis
+
+```bash
+#!/bin/bash
+# Analyze multiple projects
+for project in project1 project2 project3; do
+    echo "Analyzing $project..."
+    testability-analyzer "$project/src" --output json > "$project-results.json"
+    avg_score=$(jq -r '.summary.score_statistics.average' "$project-results.json")
+    echo "$project: $avg_score"
+done
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Setup
+
+```bash
+git clone https://github.com/BenBos71/Testability_Refactoring_Analyzer.git
+cd Testability_Refactoring_Analyzer
+pip install -e .
+pip install -e ".[dev]"
+```
+
+### Running Tests
+
+```bash
+pytest tests/
+```
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- Inspired by the need for better testability metrics in Python codebases
+- Built with the goal of making testability improvements actionable and measurable
+- Thanks to all contributors who help improve this tool
+
+## 📞 Support
+
+- 📖 [Documentation](docs/)
+- 🐛 [Issue Tracker](https://github.com/BenBos71/Testability_Refactoring_Analyzer/issues)
+- 💬 [Discussions](https://github.com/BenBos71/Testability_Refactoring_Analyzer/discussions)
+
+---
+
+**Made with ❤️ for better, more testable Python code**
