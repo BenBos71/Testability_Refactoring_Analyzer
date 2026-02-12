@@ -88,7 +88,7 @@ class BranchExplosionRule(TestabilityRule):
                 branch_count += 1
             
             # Count while loops
-            elif isinstance(child, (ast.While, ast.AsyncWhile)):
+            elif isinstance(child, ast.While):
                 branch_count += 1
             
             # Count try-except blocks

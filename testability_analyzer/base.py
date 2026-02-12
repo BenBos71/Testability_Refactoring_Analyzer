@@ -26,9 +26,9 @@ class FunctionScore:
     """Represents testability score for a single function."""
     name: str
     line_number: int
-    baseline_score: int = 100
     final_score: int
     violations: List[Violation]
+    baseline_score: int = 100
 
 
 @dataclass

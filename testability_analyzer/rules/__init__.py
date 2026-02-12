@@ -17,6 +17,7 @@ from .constructor_side_effects_rule import ConstructorSideEffectsRule
 from .hidden_imports_rule import HiddenImportsRule
 from .parameter_count_rule import ParameterCountRule
 from .observability_rule import ObservabilityRule
+from .rule_registry import RuleRegistry
 
 __all__ = [
     "ExternalDependencyRule",
@@ -31,4 +32,5 @@ __all__ = [
     "HiddenImportsRule",
     "ParameterCountRule",
     "ObservabilityRule",
+    "RuleRegistry",
 ]

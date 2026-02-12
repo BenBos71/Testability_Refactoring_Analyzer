@@ -6,7 +6,7 @@ for both file-level and function-level scores.
 """
 
 from typing import Dict, Any, List
-from ..base import FileScore, FunctionScore, Violation
+from .base import FileScore, FunctionScore, Violation
 
 
 class ThresholdClassifier:

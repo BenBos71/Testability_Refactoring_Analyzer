@@ -6,7 +6,7 @@ and aggregating scores at different levels (function, class, file).
 """
 
 from typing import List, Dict, Any
-from ..base import FunctionScore, ClassScore, Violation
+from .base import FunctionScore, ClassScore, Violation
 
 
 class ScoreCalculator:

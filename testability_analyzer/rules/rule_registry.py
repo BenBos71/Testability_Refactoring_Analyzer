@@ -6,7 +6,7 @@ and evaluation coordination.
 """
 
 from typing import List, Dict, Any
-from .base import TestabilityRule
+from ..base import TestabilityRule
 
 from .external_dependency_rule import ExternalDependencyRule
 from .file_io_rule import FileIORule

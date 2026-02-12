@@ -57,7 +57,19 @@ class TestabilityAnalyzer(Analyzer):
         
         # Calculate overall file score
         all_scores = [score.final_score for score in function_scores]
-        all_scores.extend([score.final_score for score in class_scores])
+        
+        # Add method scores from classes
+        for class_score in class_scores:
+            for method_score in class_score.method_scores:
+                all_scores.append(method_score.final_score)
+        
+        # Add constructor penalties
+        for class_score in class_scores:
+            constructor_penalty = sum(v.points_deducted for v in class_score.constructor_violations)
+            if constructor_penalty > 0:
+                # Constructor score is baseline minus penalties
+                constructor_score = max(100 - constructor_penalty, 0)
+                all_scores.append(constructor_score)
         
         if all_scores:
             overall_score = min(all_scores)  # Use worst score as file score

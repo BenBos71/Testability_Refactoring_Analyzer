@@ -14,10 +14,10 @@ from dataclasses import dataclass
 @dataclass
 class AnalysisContext:
     """Context information gathered during AST traversal."""
-    imports: Set[str]
-    global_variables: Set[str]
-    functions: List[str]
-    classes: List[str]
+    imports: set
+    global_variables: set
+    functions: list
+    classes: list
     current_function: Optional[str] = None
     current_class: Optional[str] = None
 
@@ -26,7 +26,7 @@ class ASTVisitor(ast.NodeVisitor):
     """Enhanced AST visitor that builds analysis context."""
     
     def __init__(self):
-        self.context = AnalysisContext()
+        self.context = AnalysisContext(set(), set(), [], [])
     
     def visit_Import(self, node: ast.Import) -> None:
         """Track import statements."""
@@ -128,10 +128,6 @@ class ASTVisitor(ast.NodeVisitor):
     
     def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
         """Handle exception handlers."""
-        self.generic_visit(node)
-    
-    def visit_Finally(self, node: ast.Finally) -> None:
-        """Handle finally blocks."""
         self.generic_visit(node)
     
     def visit_With(self, node: ast.With) -> None:
