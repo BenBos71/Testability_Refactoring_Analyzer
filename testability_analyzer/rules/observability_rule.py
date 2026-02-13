@@ -55,7 +55,7 @@ class ObservabilityRule(TestabilityRule):
         # Check observability indicators
         observability_score = self._calculate_observability_score(node)
         
-        if observability_score < 2:  # Low observability threshold
+        if observability_score == 0:  # Low observability threshold - only flag if NO return, NO logging, AND NO assertions
             violation = Violation(
                 rule_name=self.rule_name,
                 description=f"Low observability: function lacks return values, logging, or assertions",
