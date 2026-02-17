@@ -51,19 +51,17 @@ class JSONFormatter:
         total_violations = 0
         total_red_flags = 0
         
-        # Count violations and red flags
+        # Count violations and red flags.
+        # Treat file_score.function_scores as the authoritative list of scored functions.
+        # Do not double-count method_scores here.
         for fs in file_scores:
             for func_score in fs.function_scores:
                 total_violations += len(func_score.violations)
                 total_red_flags += sum(1 for v in func_score.violations if v.is_red_flag)
-            
+
             for class_score in fs.class_scores:
                 total_violations += len(class_score.constructor_violations)
                 total_red_flags += sum(1 for v in class_score.constructor_violations if v.is_red_flag)
-                
-                for method_score in class_score.method_scores:
-                    total_violations += len(method_score.violations)
-                    total_red_flags += sum(1 for v in method_score.violations if v.is_red_flag)
         
         # Calculate score statistics
         if file_scores:
@@ -112,10 +110,11 @@ class JSONFormatter:
                 all_violations.extend(func_score.violations)
             for class_score in file_score.class_scores:
                 all_violations.extend(class_score.constructor_violations)
-                for method_score in class_score.method_scores:
-                    all_violations.extend(method_score.violations)
-            
-            file_data['score_breakdown'] = self._create_score_breakdown(all_violations)
+
+            file_data['score_breakdown'] = self._create_score_breakdown(
+                violations=all_violations,
+                final_score=file_score.overall_score,
+            )
         
         return file_data
     
@@ -173,14 +172,14 @@ class JSONFormatter:
             'is_red_flag': violation.is_red_flag
         }
     
-    def _create_score_breakdown(self, violations: List[Violation]) -> Dict[str, Any]:
+    def _create_score_breakdown(self, violations: List[Violation], final_score: int) -> Dict[str, Any]:
         """Create detailed score breakdown."""
         breakdown = {
             'baseline_score': 100,
             'total_deductions': 0,
             'violations_by_rule': {},
             'red_flag_count': 0,
-            'final_score': 100
+            'final_score': final_score
         }
         
         # Group violations by rule
@@ -205,8 +204,7 @@ class JSONFormatter:
             if violation.is_red_flag:
                 breakdown['red_flag_count'] += 1
         
-        # Calculate totals
-        breakdown['total_deductions'] = sum(v.points_deducted for v in violations)
-        breakdown['final_score'] = max(100 - breakdown['total_deductions'], 0)
+        # Calculate totals based on the actual final score for the file.
+        breakdown['total_deductions'] = max(100 - final_score, 0)
         
         return breakdown

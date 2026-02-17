@@ -16,7 +16,8 @@ class ExceptionControlFlowRule(TestabilityRule):
     def __init__(self):
         self._control_flow_exceptions = {
             'ValueError', 'TypeError', 'KeyError', 'IndexError', 'AttributeError',
-            'StopIteration', 'LookupError', 'RuntimeError', 'AssertionError'
+            'StopIteration', 'LookupError', 'RuntimeError', 'AssertionError',
+            'FileNotFoundError'
         }
         
         self._suspicious_patterns = {

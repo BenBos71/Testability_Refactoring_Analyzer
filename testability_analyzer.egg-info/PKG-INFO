@@ -65,14 +65,33 @@ pip install git+https://github.com/BenBos71/Testability_Refactoring_Analyzer.git
 # Analyze a single file
 testability-analyzer myfile.py
 
+# If the console entrypoint isn't available in your environment:
+python3 -m testability_analyzer.cli myfile.py
+
 # Analyze a directory
 testability-analyzer src/
+
+# If the console entrypoint isn't available in your environment:
+python3 -m testability_analyzer.cli src/
 
 # Get JSON output for CI/CD
 testability-analyzer src/ --output json
 
 # Get detailed verbose output
 testability-analyzer src/ --verbose
+```
+
+## 🧪 Examples & Validation
+
+This repository includes a curated set of examples under `tests/examples/` that
+exercise the analyzer across score bands.
+
+```bash
+# Analyze all examples
+python3 -m testability_analyzer.cli tests/examples/ --verbose
+
+# Validate that band-targeted examples fall within their expected ranges
+python3 tests/examples/validate_examples.py
 ```
 
 ## 📊 What It Does

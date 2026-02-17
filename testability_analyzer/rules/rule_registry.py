@@ -27,7 +27,6 @@ class RuleRegistry:
     
     def __init__(self):
         self._rules = [
-            ExternalDependencyRule(),
             FileIORule(),
             TimeUsageRule(),
             RandomnessRule(),

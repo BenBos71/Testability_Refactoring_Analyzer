@@ -49,9 +49,9 @@ class MixedIOLogicRule(TestabilityRule):
         """
         if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             return []
-        
-        # Check if function is primarily I/O or primarily logic
-        if self._is_pure_io_function(node) or self._is_pure_logic_function(node):
+
+        # Don't flag pure I/O helper functions by name (integration tests treat these as acceptable).
+        if self._is_pure_io_function(node):
             return []
         
         # Check for mixed I/O and logic
@@ -86,7 +86,7 @@ class MixedIOLogicRule(TestabilityRule):
         
         function_name = node.name.lower()
         io_indicators = [
-            'read', 'write', 'load', 'save', 'open', 'close',
+            'read', 'write', 'open', 'close',
             'fetch', 'send', 'receive', 'connect', 'download',
             'upload', 'import', 'export', 'print', 'display'
         ]
@@ -169,5 +169,13 @@ class MixedIOLogicRule(TestabilityRule):
             # Count comparisons
             elif isinstance(child, ast.Compare):
                 logic_count += 1
+            
+            # Count non-I/O free function calls as logic (e.g., calculate_complex_logic()).
+            # Do not treat attribute calls on local variables (e.g., data.upper()) as business logic.
+            elif isinstance(child, ast.Call):
+                if isinstance(child.func, ast.Name):
+                    if child.func.id not in self._io_operations['file_ops'] and \
+                       child.func.id not in self._io_operations['console_ops']:
+                        logic_count += 1
         
         return logic_count

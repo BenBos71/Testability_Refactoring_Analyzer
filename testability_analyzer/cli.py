@@ -9,16 +9,24 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from .analyzer import TestabilityAnalyzer
-from .formatters.text_formatter import TextFormatter
-from .formatters.json_formatter import JSONFormatter
+try:
+    from .analyzer import TestabilityAnalyzer
+    from .formatters.text_formatter import TextFormatter
+    from .formatters.json_formatter import JSONFormatter
+except ImportError:  # pragma: no cover
+    from pathlib import Path as _Path
+
+    sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+    from testability_analyzer.analyzer import TestabilityAnalyzer
+    from testability_analyzer.formatters.text_formatter import TextFormatter
+    from testability_analyzer.formatters.json_formatter import JSONFormatter
 
 
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
     parser = argparse.ArgumentParser(
         prog="testability-analyzer",
-        description="Analyze Python code for testability issues and refactoring opportunities",
+        description="Testability Analyzer - analyze Python code for testability issues and refactoring opportunities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -85,15 +93,22 @@ def main() -> None:
     
     # Analyze all paths
     all_results = []
+    had_analyzable_input = False
     for path in paths:
         if path.is_file() and path.suffix == ".py":
+            had_analyzable_input = True
             result = analyzer.analyze_file(str(path))
             all_results.append(result)
         elif path.is_dir():
+            had_analyzable_input = True
             results = analyzer.analyze_directory(str(path))
             all_results.extend(results)
         else:
             print(f"Warning: Skipping non-Python file: {path}", file=sys.stderr)
+
+    if not had_analyzable_input:
+        print("Error: No Python files to analyze", file=sys.stderr)
+        sys.exit(1)
     
     # Format and output results
     if args.output == "json":

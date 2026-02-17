@@ -5,6 +5,7 @@ Detects file I/O operations in non-I/O-specific functions and applies -10 points
 """
 
 import ast
+import re
 from typing import List, Any
 
 from ..base import TestabilityRule, Violation
@@ -83,12 +84,13 @@ class FileIORule(TestabilityRule):
             True if function appears to be I/O related
         """
         io_indicators = [
-            'read', 'write', 'load', 'save', 'open', 'close',
-            'create', 'delete', 'remove', 'copy', 'move',
+            'read', 'write',
             'file', 'dir', 'path', 'io', 'temp'
         ]
         
-        return any(indicator in function_name.lower() for indicator in io_indicators)
+        name = function_name.lower()
+        tokens = [t for t in re.split(r"[^a-z0-9]+", name) if t]
+        return any(indicator in tokens for indicator in io_indicators)
     
     def _contains_io_operation(self, node: ast.AST) -> bool:
         """

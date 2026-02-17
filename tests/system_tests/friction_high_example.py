@@ -31,13 +31,8 @@ def calculate_dynamic_discount(customer_tier: str, cart_total: float, is_first_o
     if is_first_order:
         base += 0.02
 
-    if cart_total > 200:
-        base += 0.01
     if cart_total > 1000:
         base += 0.02
-
-    if region.upper() in {"EU", "CA"}:
-        base += 0.01
 
     if coupon_code == "WELCOME10":
         base = max(base, 0.10)

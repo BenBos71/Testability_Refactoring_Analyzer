@@ -23,6 +23,14 @@ def generate_support_ticket_id(prefix: str, region: str, severity: int, user_id:
     """
     ticket_id = f"{prefix}-{region}-{datetime.now().strftime('%Y%m%d')}"  # time usage
 
+    # extra branching + a bit of environment-coupling
+    if not prefix:
+        prefix = "T"
+    if region.lower() == "uk":
+        region = "EU"
+    if len(notes) > 120:
+        notes = notes[:120]
+
     # randomness usage
     salt = random.randint(1000, 9999)
 
@@ -48,6 +56,13 @@ def generate_support_ticket_id(prefix: str, region: str, severity: int, user_id:
 
     if region.upper() in {"EU", "US"}:
         ticket_id += "-CORE"
+
+    # exception-driven control flow
+    priority_map = {1: "P3", 2: "P2", 3: "P1", 4: "P0"}
+    try:
+        ticket_id += f"-{priority_map[severity]}"
+    except KeyError:
+        ticket_id += "-P3"
 
     ticket_id = f"{ticket_id}-{salt}"
 

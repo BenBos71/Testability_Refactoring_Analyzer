@@ -18,6 +18,7 @@ from .threshold_classifier import ThresholdClassifier
 
 
 class TestabilityAnalyzer(Analyzer):
+    __test__ = False
     """Main analyzer that implements the complete testability analysis pipeline."""
     
     def __init__(self):
@@ -53,7 +54,8 @@ class TestabilityAnalyzer(Analyzer):
         
         # Extract functions and classes
         function_scores = self._analyze_functions(tree, context)
-        class_scores = self._analyze_classes(tree, context)
+        class_scores, constructor_function_scores = self._analyze_classes(tree, context)
+        function_scores.extend(constructor_function_scores)
         
         # Calculate overall file score
         all_scores = [score.final_score for score in function_scores]
@@ -84,7 +86,7 @@ class TestabilityAnalyzer(Analyzer):
         for score in function_scores:
             red_flags.extend([v for v in score.violations if v.is_red_flag])
         for score in class_scores:
-            red_flags.extend(score.constructor_violations)
+            red_flags.extend([v for v in score.constructor_violations if v.is_red_flag])
         
         return FileScore(
             file_path=file_path,
@@ -130,7 +132,7 @@ class TestabilityAnalyzer(Analyzer):
         """
         function_scores = []
         
-        for node in ast.walk(tree):
+        for node in getattr(tree, "body", []):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 # Evaluate all rules for this function
                 violations = []
@@ -147,7 +149,7 @@ class TestabilityAnalyzer(Analyzer):
         
         return function_scores
     
-    def _analyze_classes(self, tree: ast.AST, context: Any) -> List[ClassScore]:
+    def _analyze_classes(self, tree: ast.AST, context: Any) -> tuple[List[ClassScore], List[FunctionScore]]:
         """
         Analyze all classes in the AST.
         
@@ -158,20 +160,32 @@ class TestabilityAnalyzer(Analyzer):
         Returns:
             List of ClassScore objects
         """
-        class_scores = []
+        class_scores: List[ClassScore] = []
+        constructor_function_scores: List[FunctionScore] = []
         
         for node in ast.walk(tree):
             if isinstance(node, ast.ClassDef):
                 # Find constructor (__init__) method
                 constructor_violations = []
                 method_scores = []
+                init_function_score: FunctionScore | None = None
                 
                 for item in node.body:
                     if isinstance(item, ast.FunctionDef) and item.name == "__init__":
-                        # Evaluate constructor rules
+                        # Evaluate constructor rules.
+                        # Some rules (ConstructorSideEffectsRule) expect the ClassDef node.
+                        init_violations = []
                         for rule in self.rule_registry.get_all_rules():
-                            rule_violations = rule.evaluate(item, context)
-                            constructor_violations.extend(rule_violations)
+                            if rule.rule_name == "Constructor Side Effects":
+                                rule_violations = rule.evaluate(node, context)
+                            else:
+                                rule_violations = rule.evaluate(item, context)
+                            init_violations.extend(rule_violations)
+
+                        constructor_violations.extend(init_violations)
+                        init_function_score = self.score_calculator.calculate_function_score(
+                            item.name, item.lineno, init_violations
+                        )
                     elif isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         # Evaluate method rules
                         violations = []
@@ -192,5 +206,8 @@ class TestabilityAnalyzer(Analyzer):
                 )
                 
                 class_scores.append(class_score)
+
+                if init_function_score is not None and any(v.is_red_flag for v in init_function_score.violations):
+                    constructor_function_scores.append(init_function_score)
         
-        return class_scores
+        return class_scores, constructor_function_scores

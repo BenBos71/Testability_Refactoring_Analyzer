@@ -8,16 +8,16 @@ and building analysis context for rule evaluation.
 import ast
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class AnalysisContext:
     """Context information gathered during AST traversal."""
-    imports: set
-    global_variables: set
-    functions: list
-    classes: list
+    imports: set = field(default_factory=set)
+    global_variables: set = field(default_factory=set)
+    functions: list = field(default_factory=list)
+    classes: list = field(default_factory=list)
     current_function: Optional[str] = None
     current_class: Optional[str] = None
 
@@ -26,7 +26,7 @@ class ASTVisitor(ast.NodeVisitor):
     """Enhanced AST visitor that builds analysis context."""
     
     def __init__(self):
-        self.context = AnalysisContext(set(), set(), [], [])
+        self.context = AnalysisContext()
     
     def visit_Import(self, node: ast.Import) -> None:
         """Track import statements."""
