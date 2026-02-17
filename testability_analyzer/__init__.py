@@ -5,7 +5,7 @@ A static analysis tool that evaluates Python code testability using deterministi
 heuristic-based rules and provides actionable refactoring guidance.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.1.0"
 __author__ = "Testability Analyzer Team"
 
 from .analyzer import TestabilityAnalyzer

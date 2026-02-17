@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="testability-analyzer",
-    version="0.1.0",
+    version="1.1.0",
     author="Testability Analyzer Team",
     author_email="team@testability-analyzer.com",
     description="A static analysis tool that evaluates Python code testability and provides refactoring guidance",
